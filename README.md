@@ -11,15 +11,15 @@
 
 命令：`xinll2战绩`
 
-<img src="https://imgtu.com/i/40i8eJ" width = "35%" height = "35%" align=center />
+<img src="https://z3.ax1x.com/2021/09/23/40ij6U.jpg" width = "40%" height = "40%" align=center />
 
 命令：`xinll2 武器数据`
 
-<img src="https://imgtu.com/i/40idSK" width = "35%" height = "35%" align=center />
+<img src="https://z3.ax1x.com/2021/09/23/40ibYq.jpg" width = "40%" height = "40%" align=center />
 
 命令：`xinll2 载具数据`
 
-<img src="https://imgtu.com/i/40iswd" width = "35%" height = "35%" align=center />
+<img src="https://z3.ax1x.com/2021/09/23/40iswd.jpg" width = "40%" height = "40%" align=center />
 
 # 后续更新计划
 - [ ] 战地5的战绩查询
