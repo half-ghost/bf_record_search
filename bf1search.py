@@ -1,4 +1,4 @@
-help_text = f''''
+help_text = f'''
 本插件为战地1的战绩查询插件，拥有如下指令：
 [xxx战绩]xxx为有效的玩家origin id
 [xxx 武器or载具or模式or职业数据]注意空格
