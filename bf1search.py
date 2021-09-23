@@ -422,4 +422,4 @@ async def refresh_BGimg(bot, ev):
 
 @sv.on_fullmatch('战地战绩插件帮助')
 async def bot_help(bot, ev):
-    await bot.send(ev, help)
+    await bot.send(ev, help_text)
