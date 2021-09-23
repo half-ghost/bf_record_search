@@ -4,7 +4,7 @@ help_text = f'''
 [xxx 武器or载具or模式or职业数据]注意空格
 [更新图片资源xxx]仅在缺少图片资源时使用，xxx为有效的玩家origin id
 [刷新背景图]更换完自定义背景后，在不想重启bot的情况下使用
-'''
+'''.strip()
 
 from requests import get
 import json
