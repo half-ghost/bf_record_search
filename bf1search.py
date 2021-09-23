@@ -32,7 +32,7 @@ if im.size != (1920, 1080):
 # 各种工具
 
 # 缺失图片时使用本方法
-async def download_img(img_type):
+def download_img(img_type):
     json_content = ""
     if img_type == "weapon":
         json_content = json_page['weapons']
@@ -407,11 +407,11 @@ async def refresh_img(bot, ev):
     else:
         await bot.send(ev, "正在更新图片资源，请等待更新完毕后再使用本插件")
         if not os.path.exists(os.path.join(filepath, "class_img")):
-            await download_img("class")
+            download_img("class")
         if not os.path.exists(os.path.join(filepath, "weapon_img")):
-            await download_img("weapon")
+            download_img("weapon")
         if not os.path.exists(os.path.join(filepath, "vehicle_img")):
-            await download_img("vehicle")
+            download_img("vehicle")
         await bot.send(ev, "更新图片资源完毕")
 
 @sv.on_fullmatch('刷新背景图')
