@@ -7,8 +7,21 @@
 
 命令2：`xxx 武器or载具or模式or职业数据` 查询更加详细的数据，注意空格
 
-# 后续更新计划
+拿我自己做例子：
 
+命令：`xinll2战绩`
+
+<img src="https://imgtu.com/i/40i8eJ" width = "35%" height = "35%" align=center />
+
+命令：`xinll2 武器数据`
+
+<img src="https://imgtu.com/i/40idSK" width = "35%" height = "35%" align=center />
+
+命令：`xinll2 载具数据`
+
+<img src="https://imgtu.com/i/40iswd" width = "35%" height = "35%" align=center />
+
+# 后续更新计划
 - [ ] 战地5的战绩查询
 - [ ] 对武器载具等名称的汉化
 - [ ] 增加绑定id功能，不用每次查询时都输入origin id
