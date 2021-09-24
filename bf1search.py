@@ -416,6 +416,8 @@ async def refresh_img(bot, ev):
 
 @sv.on_fullmatch('刷新背景图')
 async def refresh_BGimg(bot, ev):
+    global im
+    im = Image.open(os.path.join(filepath, "background.jpg"))
     general_BGimg_creater(1)
     other_BGimg_creater()
     await bot.send(ev, "刷新完毕")
