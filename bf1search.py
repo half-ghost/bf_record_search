@@ -26,9 +26,9 @@ text_list = ['击杀', '助攻', 'KD', 'KPM', '步战KD', '步战KPM', '爆头�
 
 # 如需更换自定义背景，请将背景重命名为background.jpg，并参照下面的说明来生成两个背景
 # 自定义背景图分辨率需为1920*1080，或者与其比例一致，否则会被拉伸至该比例
-im = Image.open(os.path.join(filepath, "background.jpg"))
-if im.size != (1920, 1080):
-    im = im.resize((1920, 1080))
+BGimg = Image.open(os.path.join(filepath, "background.jpg"))
+if BGimg.size != (1920, 1080):
+    BGimg = BGimg.resize((1920, 1080))
 
 # 各种工具
 
@@ -70,7 +70,7 @@ def download_img(img_type):
                 f.write(img_content)
 
 # 更换自定义背景图后使用本方法生成一个用于展示总体战绩的背景图
-def general_BGimg_creater(mode):
+def general_BGimg_creater(mode, im):
     '''
     mode为1时，新建一个背景高斯模糊，黑框半透明的图
     mode为2时，新建一个背景不模糊，黑框部分高斯模糊的图
@@ -114,7 +114,7 @@ def general_BGimg_creater(mode):
     im1.save(os.path.join(filepath, "general_bg.jpg"), quality=95)
 
 # 以及一个用于展示详细数据的背景图
-def other_BGimg_creater(mode):
+def other_BGimg_creater(mode, im):
     if mode == 1:
         im1 = im.crop((430, 0, 1490, 1080)).filter(ImageFilter.GaussianBlur(radius = 3))
     elif mode == 2:
@@ -355,8 +355,8 @@ def other_img_creater(mode, best_list, palyername):
 # 首次加载时，生成两个背景，默认为模式1
 # 若需要更换自定义背景，请在图片重命名之后重启本插件
 # 在首次加载生成背景之后，最好将这部分代码注释掉，下次需要时再使用
-general_BGimg_creater(1)
-other_BGimg_creater(1)
+general_BGimg_creater(1, BGimg)
+other_BGimg_creater(1, BGimg)
 
 # 首次加载时如果没有3个图标文件夹，则自动下载
 # 如果需要下载图标文件，则在get_data("")内填入任意一个库存内有对应战地版本游戏的origin的id
@@ -372,7 +372,7 @@ other_BGimg_creater(1)
 sv = Service("zhandi_query")
 
 @sv.on_suffix('战绩')
-async def zd_query(bot, ev):
+async def zd_general_query(bot, ev):
     player = ev.message.extract_plain_text().strip()
     resp = get_data(player)
     if resp.get("detail", " ") == "playername not found":
@@ -383,7 +383,7 @@ async def zd_query(bot, ev):
         await bot.send(ev, f"[CQ:image,file={img_mes}]")
 
 @sv.on_suffix('数据')
-async def zd_query(bot, ev):
+async def zd_other_query(bot, ev):
     evmes = ev.message.extract_plain_text().strip().split(" ")
     playername = evmes[0]
     mode =evmes[1]
@@ -425,10 +425,11 @@ async def refresh_img(bot, ev):
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
     mode = ev.message.extract_plain_text().strip()
-    global im
-    im = Image.open(os.path.join(filepath, "background.jpg"))
-    general_BGimg_creater(mode)
-    other_BGimg_creater(mode)
+    BGimg1 = Image.open(os.path.join(filepath, "background.jpg"))
+    if BGimg1.size != (1920, 1080):
+        BGimg1 = BGimg1.resize((1920, 1080))
+    general_BGimg_creater(mode, BGimg1)
+    other_BGimg_creater(mode, BGimg)
     await bot.send(ev, "刷新完毕")
 
 @sv.on_fullmatch('战地战绩插件帮助')
