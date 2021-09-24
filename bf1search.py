@@ -216,7 +216,7 @@ def best_weapon():
         weapon_dict['名称'] = i['weaponName'].replace('/', '_')
         weapon_dict['击杀'] = i['kills']
         weapon_dict['KPM'] = i['killsPerMinute']
-        weapon_dict['爆头击杀'] = i['headshots']
+        weapon_dict['爆头率'] = i['headshots']
         weapon_dict['精准率'] = i['accuracy']
         weapon_dict['类型'] = i['type'].replace('/', '_')
         weapon_list.append(weapon_dict)
