@@ -352,11 +352,11 @@ def other_img_creater(mode, best_list, palyername):
 
     return base64_str
 
-# 首次加载时，生成两个背景
+# 首次加载时，生成两个背景，默认为模式1
 # 若需要更换自定义背景，请在图片重命名之后重启本插件
 # 在首次加载生成背景之后，最好将这部分代码注释掉，下次需要时再使用
 general_BGimg_creater(1)
-other_BGimg_creater()
+other_BGimg_creater(1)
 
 # 首次加载时如果没有3个图标文件夹，则自动下载
 # 如果需要下载图标文件，则在get_data("")内填入任意一个库存内有对应战地版本游戏的origin的id
