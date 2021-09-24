@@ -3,7 +3,8 @@ help_text = f'''
 [xxx战绩]xxx为有效的玩家origin id
 [xxx 武器or载具or模式or职业数据]注意空格
 [更新图片资源xxx]仅在缺少图片资源时使用，xxx为有效的玩家origin id
-[刷新背景图]更换完自定义背景后，在不想重启bot的情况下使用
+[刷新背景图1or2]更换完自定义背景后，在不想重启bot的情况下使用
+1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
 '''.strip()
 
 from requests import get
@@ -79,7 +80,7 @@ def general_BGimg_creater(mode):
     if mode == 1:
         im1 = im.filter(ImageFilter.GaussianBlur(radius = 3))
     elif mode == 2:
-        im1 = im
+        im1 = im.copy()
     
     left_back = Image.new("RGBA", (610, 880), (0, 0, 0, 105))
     right_back = Image.new("RGBA", (1020, 190), (0, 0, 0, 105))
@@ -113,13 +114,20 @@ def general_BGimg_creater(mode):
     im1.save(os.path.join(filepath, "general_bg.jpg"), quality=95)
 
 # 以及一个用于展示详细数据的背景图
-def other_BGimg_creater():
-    im1 = im.crop((430, 0, 1490, 1080)).filter(ImageFilter.GaussianBlur(radius = 3))
+def other_BGimg_creater(mode):
+    if mode == 1:
+        im1 = im.crop((430, 0, 1490, 1080)).filter(ImageFilter.GaussianBlur(radius = 3))
+    elif mode == 2:
+        im1 = im.crop((430, 0, 1490, 1080))
+    
     back = Image.new("RGBA", (1000, 175), (0, 0, 0, 105))
     a = back.split()[3]
     for i in range(5):
+        if mode == 2:
+            box = im1.crop((30, 25+30*(i+1)+175*i)).filter(ImageFilter.GaussianBlur(radius = 8))
+            im1.paste(box, (30, 25+30*(i+1)+175*i))
         im1.paste(back, (30, 25+30*(i+1)+175*i), a)
-
+    
     im1.save(os.path.join(filepath, "other_bg.jpg"), quality=95)
 
 # 转换秒数为时分秒的形式
@@ -414,12 +422,13 @@ async def refresh_img(bot, ev):
             download_img("vehicle")
         await bot.send(ev, "更新图片资源完毕")
 
-@sv.on_fullmatch('刷新背景图')
+@sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
+    mode = ev.message.extract_plain_text().strip()
     global im
     im = Image.open(os.path.join(filepath, "background.jpg"))
-    general_BGimg_creater(1)
-    other_BGimg_creater()
+    general_BGimg_creater(mode)
+    other_BGimg_creater(mode)
     await bot.send(ev, "刷新完毕")
 
 @sv.on_fullmatch('战地战绩插件帮助')
