@@ -26,9 +26,13 @@ text_list = ['击杀', '助攻', 'KD', 'KPM', '步战KD', '步战KPM', '爆头�
 
 # 如需更换自定义背景，请将背景重命名为background.jpg，并参照下面的说明来生成两个背景
 # 自定义背景图分辨率需为1920*1080，或者与其比例一致，否则会被拉伸至该比例
-BGimg = Image.open(os.path.join(filepath, "background.jpg"))
-if BGimg.size != (1920, 1080):
-    BGimg = BGimg.resize((1920, 1080))
+def get_img():
+    BGimg = Image.open(os.path.join(filepath, "background.jpg"))
+    if BGimg.size != (1920, 1080):
+        BGimg = BGimg.resize((1920, 1080))
+
+    return BGimg
+
 
 # 各种工具
 
@@ -124,8 +128,8 @@ def other_BGimg_creater(mode, im):
     a = back.split()[3]
     for i in range(5):
         if mode == 2:
-            box = im1.crop((30, 25+30*(i+1)+175*i)).filter(ImageFilter.GaussianBlur(radius = 8))
-            im1.paste(box, (30, 25+30*(i+1)+175*i))
+            box = im1.crop((30, 25+30*(i+1)+175*i, 1030, 200+30*(i+1)+175*i)).filter(ImageFilter.GaussianBlur(radius = 8))
+            im1.paste(box, (30, 25+30*(i+1)+175*i, 1030, 200+30*(i+1)+175*i))
         im1.paste(back, (30, 25+30*(i+1)+175*i), a)
     
     im1.save(os.path.join(filepath, "other_bg.jpg"), quality=95)
@@ -355,8 +359,8 @@ def other_img_creater(mode, best_list, palyername):
 # 首次加载时，生成两个背景，默认为模式1
 # 若需要更换自定义背景，请在图片重命名之后重启本插件
 # 在首次加载生成背景之后，最好将这部分代码注释掉，下次需要时再使用
-general_BGimg_creater(1, BGimg)
-other_BGimg_creater(1, BGimg)
+general_BGimg_creater(1, get_img())
+other_BGimg_creater(1, get_img())
 
 # 首次加载时如果没有3个图标文件夹，则自动下载
 # 如果需要下载图标文件，则在get_data("")内填入任意一个库存内有对应战地版本游戏的origin的id
@@ -425,11 +429,8 @@ async def refresh_img(bot, ev):
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
     mode = ev.message.extract_plain_text().strip()
-    BGimg1 = Image.open(os.path.join(filepath, "background.jpg"))
-    if BGimg1.size != (1920, 1080):
-        BGimg1 = BGimg1.resize((1920, 1080))
-    general_BGimg_creater(mode, BGimg1)
-    other_BGimg_creater(mode, BGimg)
+    general_BGimg_creater(int(mode), get_img())
+    other_BGimg_creater(int(mode), get_img())
     await bot.send(ev, "刷新完毕")
 
 @sv.on_fullmatch('战地战绩插件帮助')
