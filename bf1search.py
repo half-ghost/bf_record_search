@@ -462,7 +462,6 @@ async def bf1_bind(bot, ev):
 async def bindid_query(bot, ev):
     with open(bf1_bind_path, "r", encoding = "utf-8") as f:
         id_dict = json.loads(f.read())
-    print(id_dict)
     bind_stat = id_dict.get(str(ev['user_id']), '')
     if bind_stat == '':
         await bot.send(ev, "您目前未绑定任何id!", at_sender=True)
