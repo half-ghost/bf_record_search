@@ -1,10 +1,19 @@
 help_text = f'''
 本插件为战地1的战绩查询插件，拥有如下指令：
-[xxx战绩]xxx为有效的玩家origin id
-[xxx 武器or载具or模式or职业数据]注意空格
-[更新图片资源xxx]仅在缺少图片资源时使用，xxx为有效的玩家origin id
-[刷新背景图1or2]更换完自定义背景后，在不想重启bot的情况下使用
-1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
+--------------------
+查询相关
+xxx战绩 : xxx为有效的玩家origin id
+xxx 武器数据or载具数据or模式数据or职业数据 : 各个详细数据，注意空格
+/战绩or/武器or/载具or/模式or/职业 : 此为绑定id之后的查询指令
+--------------------
+绑定相关
+绑定xxx : xxx为有效的玩家origin id，更换绑定的id也同样使用本指令
+查询战地绑定 : 查询自己当前绑定了哪个id
+解除战地绑定 : 解除自己绑定的id
+--------------------
+其他相关(仅群管理员或者bot管理员可用)
+更新图片资源xxx : 仅在缺少图片资源时使用，xxx为有效的玩家origin id
+刷新背景图1or2 : 更换完自定义背景后，在不想重启bot的情况下使用。1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
 '''.strip()
 
 from requests import get
@@ -13,16 +22,22 @@ import os
 from PIL import Image,ImageDraw,ImageFont,ImageFilter
 import io
 import base64
-from hoshino import Service
+from hoshino import Service,priv
 
 
 filepath = os.path.dirname(__file__)
 json_page = ""
+bf1_bind_path = os.path.join(filepath, "bf1_bindid.json")
+transtxt_path = os.path.join(filepath, "bf_translate.json")
+bindid_dict = {}
 font_path = os.path.join(filepath, "msyhl.ttc") # ""内可以换成你喜欢的字体，请在更换字体后填入字体文件名
 largefont = ImageFont.truetype(font_path, 38)
 middlefont = ImageFont.truetype(font_path, 30)
 smallfont = ImageFont.truetype(font_path, 26)
 text_list = ['击杀', '助攻', 'KD', 'KPM', '步战KD', '步战KPM', '爆头击杀', '爆头率', '精准率', '胜场', '败场', '胜率', '游戏局数', 'SPM', '技巧值', '总治疗量']
+
+with open(transtxt_path, 'r', encoding = 'utf-8') as f:
+    bf1translate = json.loads(f.read())
 
 # 如需更换自定义背景，请将背景重命名为background.jpg，并参照下面的说明来生成两个背景
 # 自定义背景图分辨率需为1920*1080，或者与其比例一致，否则会被拉伸至该比例
@@ -32,7 +47,6 @@ def get_img():
         BGimg = BGimg.resize((1920, 1080))
 
     return BGimg
-
 
 # 各种工具
 
@@ -253,19 +267,21 @@ def best_gamemodes():
     
     return modes_list
 
+# 返回文字内容（除去名称和类型）以及文字内容的长度
 def dict_text_draw_info(select_dict):
     text = ""
-    text_width = 0
+    text_lenth = 0
     for k,v in select_dict.items():
         if k == "名称" or k == '类型':
             continue
         text += f'{k}:{str(v)}   '
 
     font = resize_font(38, text, 1000)
-    text_width = font.getsize(text.strip())[0]
+    text_lenth = font.getsize(text.strip())[0]
 
-    return text, text_width
+    return text, text_lenth
 
+# 返回图标路径，图标透明度，将图标宽度拉至100像素后对应的长度，图标名称
 def icon_info(mode, dict):
     icon_name = dict.get('名称')
     if mode == "class":
@@ -279,8 +295,9 @@ def icon_info(mode, dict):
     x, y = int(size[0]*(100/size[1])), 100
     icon_path = im.resize((x, y))
 
-    return icon_path, icon_path.split()[3], x, icon_name
+    return icon_path, icon_path.split()[3], x, icon_name.replace('_', '/')
 
+# 将详细数据绘制到图片中
 def bestinfo_drawer(mode, image, dict, middle_x, y, blank):
     if mode == 'class':
         icon1 = icon_info('class', dict)
@@ -291,7 +308,8 @@ def bestinfo_drawer(mode, image, dict, middle_x, y, blank):
 
     image.paste(icon1[0], (middle_x-icon1[2]-20, y), icon1[1])
     draw = ImageDraw.Draw(image, "RGB")
-    draw.text((middle_x+20, y+25), icon1[3].replace('_', '/'), font = resize_font(38, icon1[3].replace('_', '/'), 490), fill = (255, 255, 255))
+    transtext = bf1translate.get(str(icon1[3]).upper(), icon1[3])
+    draw.text((middle_x+20, y+25), transtext, font = resize_font(38, transtext, 490), fill = (255, 255, 255))
     draw1 = dict_text_draw_info(dict)
     draw.text((middle_x-draw1[1]/2, y+blank+100), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
 
@@ -323,7 +341,7 @@ def general_img_creater(g_dict, c_list, w_list, v_list, g_list):
     bestinfo_drawer('weapon', im, best_weapon_dict, 1310, 115+230*1, 10)
     bestinfo_drawer('vehicle', im, best_vehicles_dict, 1310, 115+230*2, 10)
     draw1 = dict_text_draw_info(best_gamemodes_dict)
-    modename = f"最佳游戏模式:{best_gamemodes_dict.get('名称')}"
+    modename = f"最佳游戏模式:{bf1translate.get(best_gamemodes_dict.get('名称').upper())}"
     draw.text((1310-largefont.getsize(modename)[0]/2, 110+230*3+25), modename, font =largefont, fill = (255, 255, 255))
     draw.text((1310-draw1[1]/2, 110+230*3+115), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
 
@@ -334,7 +352,7 @@ def general_img_creater(g_dict, c_list, w_list, v_list, g_list):
     return base64_str
 
 # 生成详细数据图片的方法
-def other_img_creater(mode, best_list, palyername):
+def other_img_creater(mode, best_list, playname):
     im = Image.open(os.path.join(filepath, "other_bg.jpg"))
     draw = ImageDraw.Draw(im, "RGB")
     if mode == "gamemode":
@@ -348,7 +366,7 @@ def other_img_creater(mode, best_list, palyername):
             best_dict = best_list[i]
             bestinfo_drawer(mode, im, best_dict, 530, 65+175*i+30*i, 10)
     
-    draw.text((530-largefont.getsize(palyername)[0]/2, 0), palyername, font = largefont, fill = (0, 0, 0))
+    draw.text((530-largefont.getsize(playname)[0]/2, 0), playname, font = largefont, fill = (0, 0, 0))
 
     b_io = io.BytesIO()
     im.save(b_io, format = "JPEG")
@@ -356,11 +374,29 @@ def other_img_creater(mode, best_list, palyername):
 
     return base64_str
 
+# 绑定id
+def bindid_action(mode, userqqid, playername):
+    if not os.path.exists(bf1_bind_path):
+        with open(bf1_bind_path, "w", encoding = "utf-8") as f:
+            f.write(json.dumps(bindid_dict))
+    with open(bf1_bind_path, "r", encoding = "utf-8") as f:
+        id_dict = json.loads(f.read())
+    oldid = id_dict.get(str(userqqid), '')
+    if mode == 'add':
+        newid = str(playername)
+        id_dict[str(userqqid)] = str(playername)
+    elif mode == 'delete':
+        id_dict.pop(str(userqqid), '')
+        newid = ''
+    with open(bf1_bind_path, "w+", encoding = "utf-8") as f:
+        f.write(json.dumps(id_dict))
+    return oldid, newid
+
 # 首次加载时，生成两个背景，默认为模式1
 # 若需要更换自定义背景，请在图片重命名之后重启本插件
 # 在首次加载生成背景之后，最好将这部分代码注释掉，下次需要时再使用
-general_BGimg_creater(1, get_img())
-other_BGimg_creater(1, get_img())
+# general_BGimg_creater(1, get_img())
+# other_BGimg_creater(1, get_img())
 
 # 首次加载时如果没有3个图标文件夹，则自动下载
 # 如果需要下载图标文件，则在get_data("")内填入任意一个库存内有对应战地版本游戏的origin的id
@@ -372,11 +408,13 @@ other_BGimg_creater(1, get_img())
 #     download_img("weapon")
 # if not os.path.exists(os.path.join(filepath, "vehicle_img")):
 #     download_img("vehicle")
+# 战地5id NoctivAgaTion
+
 
 sv = Service("zhandi_query")
 
 @sv.on_suffix('战绩')
-async def zd_general_query(bot, ev):
+async def bf_general_query(bot, ev):
     player = ev.message.extract_plain_text().strip()
     resp = get_data(player)
     if resp.get("detail", " ") == "playername not found":
@@ -387,13 +425,13 @@ async def zd_general_query(bot, ev):
         await bot.send(ev, f"[CQ:image,file={img_mes}]")
 
 @sv.on_suffix('数据')
-async def zd_other_query(bot, ev):
+async def bf_other_query(bot, ev):
     evmes = ev.message.extract_plain_text().strip().split(" ")
     playername = evmes[0]
     mode =evmes[1]
     resp = get_data(playername)
     if resp.get("detail", " ") == "playername not found":
-        await bot.send(ev, "查无此人")
+        await bot.send(ev, "查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复", at_sender=True)
     else:
         if mode == "武器":
             query_mode = "weapon"
@@ -410,10 +448,76 @@ async def zd_other_query(bot, ev):
         img_mes = other_img_creater(query_mode, query_list, playername)
         await bot.send(ev, f"[CQ:image,file={img_mes}]")
 
+@sv.on_prefix('绑定')
+async def bf1_bind(bot, ev):
+    userqqid = ev['user_id']
+    playername = ev['message'][0]['data']['text']
+    bind_stat = bindid_action("add", userqqid, playername)
+    if bind_stat[0] == "":
+        await bot.send(ev, f"绑定成功!新id:{bind_stat[1]}", at_sender=True)
+    elif bind_stat[0] != "":
+        await bot.send(ev, f"替换绑定成功!旧id:{bind_stat[0]}->新id:{bind_stat[1]}", at_sender=True)
+
+@sv.on_fullmatch('查询战地绑定')
+async def bindid_query(bot, ev):
+    with open(bf1_bind_path, "r", encoding = "utf-8") as f:
+        id_dict = json.loads(f.read())
+    print(id_dict)
+    bind_stat = id_dict.get(str(ev['user_id']), '')
+    if bind_stat == '':
+        await bot.send(ev, "您目前未绑定任何id!", at_sender=True)
+    else:
+        await bot.send(ev, f"您目前绑定的id:{bind_stat}", at_sender=True)
+
+@sv.on_fullmatch('解除战地绑定')
+async def bf1_unbind(bot, ev):
+    userqqid = ev['user_id']
+    bind_stat = bindid_action("delete", userqqid, None)
+    if bind_stat[0] == '':
+        await bot.send(ev, "您还未绑定任何id!", at_sender=True)
+    else:
+        await bot.send(ev, f"解绑id:{bind_stat[0]}成功!", at_sender=True)
+
+@sv.on_prefix('/')
+async def bind_search(bot, ev):
+    mes_id = ev['message_id']
+    with open(bf1_bind_path, "r", encoding = "utf-8") as f:
+        id_dict = json.loads(f.read())
+    if id_dict.get(str(ev['user_id']), '') == '':
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]您暂未绑定id，请发送绑定+id进行绑定!", at_sender=True)
+    else:
+        playername = id_dict.get(str(ev['user_id']), '')
+        resp = get_data(playername)
+        mode = ev.message.extract_plain_text().strip()
+        if resp.get("detail", " ") == "playername not found":
+            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复", at_sender=True)
+        else:
+            if mode == "战绩":
+                dict = general()
+                img_mes = general_img_creater(dict, best_class(), best_weapon(), best_vehicles(), best_gamemodes())
+            else:
+                if mode == "武器":
+                    query_mode = "weapon"
+                    query_list = best_weapon()
+                elif mode == "载具":
+                    query_mode = "vehicle"
+                    query_list = best_vehicles()
+                elif mode == "职业":
+                    query_mode = "class"
+                    query_list = best_class()
+                elif mode == "模式":
+                    query_mode = "gamemode"
+                    query_list = best_gamemodes()
+                img_mes = other_img_creater(query_mode, query_list, playername)
+            await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+        
 @sv.on_prefix('更新图片资源')
 async def refresh_img(bot, ev):
-    palyername = ev.message.extract_plain_text().strip()
-    resp = get_data(palyername)
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.send(ev, "本功能只对群管理或bot管理员开放")
+        return
+    playname = ev.message.extract_plain_text().strip()
+    resp = get_data(playname)
     if resp.get("detail", " ") == "playername not found":
         await bot.send(ev, "此id无效，请输入其他有效id")
     else:
@@ -428,6 +532,9 @@ async def refresh_img(bot, ev):
 
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.send(ev, "本功能只对群管理或bot管理员开放")
+        return
     mode = ev.message.extract_plain_text().strip()
     general_BGimg_creater(int(mode), get_img())
     other_BGimg_creater(int(mode), get_img())
