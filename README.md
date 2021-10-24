@@ -5,29 +5,31 @@
 
 目前已更新汉化和绑定id功能，更新之后的具体内容和指令请发送指令"战地战绩插件帮助"获取
 
-命令1：`xxx战绩`  xxx为有效的玩家origin id
+更新战地5以及武器类型细分的详细数据。
 
-命令2：`xxx 武器or载具or模式or职业数据` 查询更加详细的数据，注意空格
+命令1：`xxx战地1战绩`or`xxx战地5战绩`  xxx为有效的玩家origin id
+
+命令2：`xxx 战地1武器or载具or模式or职业数据`or`xxx 战地5武器数据` 查询更加详细的数据，注意xxx后的空格，战地1和战地5可查询的详细数据不同，具体可查看帮助
 
 拿我自己做例子：
 
-命令：`xinll2战绩`
+命令：`xinll2战地1战绩`
 
 <img src="https://z3.ax1x.com/2021/09/23/40ij6U.jpg" width = "40%" height = "40%" align=center />
 
-命令：`xinll2 武器数据`
+命令：`xinll2 战地1武器数据`
 
 <img src="https://z3.ax1x.com/2021/09/23/40ibYq.jpg" width = "40%" height = "40%" align=center />
 
-命令：`xinll2 载具数据`
+命令：`xinll2 战地1载具数据`
 
 <img src="https://z3.ax1x.com/2021/09/23/40iswd.jpg" width = "40%" height = "40%" align=center />
 
 # 后续更新计划
-- [ ] 战地5的战绩查询
+- [x] 战地5的战绩查询
 - [x] 对武器载具等名称的汉化
 - [x] 增加绑定id功能，不用每次查询时都输入origin id
-- [ ] 对武器类型细分，并加入数据查询
+- [x] 对武器类型细分，并加入数据查询
 
 感谢[@冷雷佬](https://github.com/ColdThunder11)提供的中文译本
 
