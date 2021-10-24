@@ -2,18 +2,20 @@ help_text = f'''
 本插件为战地1的战绩查询插件，拥有如下指令：
 --------------------
 查询相关
-xxx战绩 : xxx为有效的玩家origin id
-xxx 武器数据or载具数据or模式数据or职业数据 : 各个详细数据，注意空格
-/战绩or/武器or/载具or/模式or/职业 : 此为绑定id之后的查询指令
+[xxx战地1战绩or战地5战绩] :xxx为有效的玩家origin id
+(战地1可查看的详细数据:战绩,武器,手枪,近战,配备(迫击炮,炸药等),特种(哨兵,喷火兵等),载具,职业,模式)
+
+(战地5可查看的详细数据:战绩,武器,手枪,近战,配备,载具,职业)
+[xxx 战地1or战地5yy数据] :xxx为origin id，yy为上述详细数据，注意xxx后的空格
+[/1or5yy] :此为绑定id之后的查询指令
 --------------------
 绑定相关
-绑定xxx : xxx为有效的玩家origin id，更换绑定的id也同样使用本指令
-查询战地绑定 : 查询自己当前绑定了哪个id
-解除战地绑定 : 解除自己绑定的id
+[绑定xxx] :绑定玩家origin id，更换绑定的id也同样使用本指令
+[查询战地绑定] :查询自己当前绑定了哪个id
+[解除战地绑定] :解除自己绑定的id
 --------------------
 其他相关(仅群管理员或者bot管理员可用)
-更新图片资源xxx : 仅在缺少图片资源时使用，xxx为有效的玩家origin id
-刷新背景图1or2 : 更换完自定义背景后，在不想重启bot的情况下使用。1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
+[刷新背景图1or2] :更换完自定义背景后，在不想重启bot的情况下使用。1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
 '''.strip()
 
 from requests import get
@@ -24,12 +26,12 @@ import io
 import base64
 from hoshino import Service,priv
 
-
 filepath = os.path.dirname(__file__)
 json_page = ""
+bf1_imgpath = os.path.join(filepath, "bf1")
+bfv_imgpath = os.path.join(filepath, "bfv")
 bf1_bind_path = os.path.join(filepath, "bf1_bindid.json")
 transtxt_path = os.path.join(filepath, "bf_translate.json")
-bindid_dict = {}
 font_path = os.path.join(filepath, "msyhl.ttc") # ""内可以换成你喜欢的字体，请在更换字体后填入字体文件名
 largefont = ImageFont.truetype(font_path, 38)
 middlefont = ImageFont.truetype(font_path, 30)
@@ -51,7 +53,7 @@ def get_img():
 # 各种工具
 
 # 缺失图片时使用本方法
-def download_img(img_type):
+def download_img(bfversion, img_type):
     json_content = ""
     if img_type == "weapon":
         json_content = json_page['weapons']
@@ -62,14 +64,17 @@ def download_img(img_type):
     else:
         print("找不到数据")
         return
-    img_path = os.path.join(filepath, f"{img_type}_img")
+    if bfversion == "bf1":
+        img_path = os.path.join(bf1_imgpath, f"{img_type}_img")
+    elif bfversion == "bfv":
+        img_path = os.path.join(bfv_imgpath, f"{img_type}_img")
     if img_type == "class":
         for i in json_content:
             name = i[f'{img_type}Name']
             img = i['image']
             if not os.path.exists(img_path):
                 os.mkdir(img_path)
-            print(f"正在下载{img_type}第{json_content.index(i)+1}个图标")
+            print(f"{bfversion} 正在下载{img_type}第{json_content.index(i)+1}个图标")
             img_content = get(img).content
             with open(f"{img_path}/{name}.png", "wb")as f:
                 f.write(img_content)
@@ -82,10 +87,23 @@ def download_img(img_type):
                 os.mkdir(img_path)
             if not os.path.exists(f"{img_path}/{get_type}"):
                 os.mkdir(f"{img_path}/{get_type}")
-            print(f"正在下载{img_type}第{json_content.index(i)+1}个图标")
+            print(f"{bfversion} 正在下载{img_type}第{json_content.index(i)+1}个图标")
             img_content = get(img).content
-            with open(f"{img_path}/{get_type}/{name}.png", "wb")as f:
-                f.write(img_content)
+            img_bytestream = io.BytesIO(img_content)
+            im = Image.open(img_bytestream)
+            bbox = im.getbbox()
+            middle_point = ((bbox[0] + bbox[2])/2, (bbox[1] + bbox[3])/2)
+            if bbox[2] - bbox[0] <= 256 and bbox[3] - bbox[1] <= 64:
+                crop_box = (middle_point[0] - 128, middle_point[1] - 32, middle_point[0] + 128, middle_point[1] + 32)
+            elif bbox[2] - bbox[0] > 256 and bbox[3] - bbox[1] > 64:
+                crop_box = (bbox[0] - 10, bbox[1] -10, bbox[2] + 10, bbox[3] + 10)
+            else:
+                if bbox[2] - bbox[0] > 256:
+                    crop_box = (bbox[0] - 10, middle_point[1] - 32, bbox[2] + 10, middle_point[1] + 32)
+                elif bbox[3] - bbox[1] > 64:
+                    crop_box = (middle_point[0] - 128, bbox[1] -10, middle_point[0] + 128, bbox[3] + 10)
+            im2 = im.crop(crop_box)
+            im2.save(f"{img_path}/{get_type}/{name}.png")
 
 # 更换自定义背景图后使用本方法生成一个用于展示总体战绩的背景图
 def general_BGimg_creater(mode, im):
@@ -174,9 +192,12 @@ def resize_font(font_size, text_str, limit_width):
 
     return font
 
-def get_data(player_name):
+def get_data(bfversion, player_name):
     global json_page
-    surl = f"https://api.gametools.network/bf1/all/?name={player_name}&lang=en-us"
+    if bfversion == "bf1":
+        surl = f"https://api.gametools.network/bf1/all/?name={player_name}&lang=en-us"
+    elif bfversion == "bfv":
+        surl = f"https://api.gametools.network/bfv/all/?name={player_name}&lang=en-us"
     reqs = get(surl).text
     json_page = json.loads(reqs)
     
@@ -223,7 +244,7 @@ def best_class():
     return class_lsit
 
 def best_weapon():
-    weapon_list = []
+    general_weapon_list, Gadget_list, Sidearm_list, Field_kit_list, Melee_list = [], [], [], [], []
     weapon_page = json_page['weapons']
     for i in weapon_page:
         weapon_dict = {}
@@ -232,11 +253,16 @@ def best_weapon():
         weapon_dict['KPM'] = i['killsPerMinute']
         weapon_dict['爆头率'] = i['headshots']
         weapon_dict['精准率'] = i['accuracy']
+        weapon_dict['时长'] = seconds_trans(i['timeEquipped'])
         weapon_dict['类型'] = i['type'].replace('/', '_')
-        weapon_list.append(weapon_dict)
-    weapon_list.sort(key = lambda x : x['击杀'], reverse=True)
-    
-    return weapon_list
+        general_weapon_list.append(weapon_dict)
+    general_weapon_list.sort(key = lambda x : x['击杀'], reverse=True)
+    Gadget_list.extend(i for i in general_weapon_list if i.get('类型') == "Gadget")
+    Sidearm_list.extend(i for i in general_weapon_list if i.get('类型') == "Sidearm")
+    Field_kit_list.extend(i for i in general_weapon_list if i.get('类型') == "Field kit")
+    Melee_list.extend(i for i in general_weapon_list if i.get('类型') == "Melee")
+
+    return general_weapon_list, Gadget_list, Sidearm_list, Field_kit_list, Melee_list
 
 def best_vehicles():
     vehicle_lsit = []
@@ -245,6 +271,7 @@ def best_vehicles():
         vehicle_dict = {}
         vehicle_dict['击杀'] = i['kills']
         vehicle_dict['KPM'] = i['killsPerMinute']
+        vehicle_dict['时长'] = seconds_trans(i['timeIn'])
         vehicle_dict['类型'] = i['type'].replace('/', '_')
         vehicle_dict['名称'] = i['vehicleName'].replace('/', '_')
         vehicle_lsit.append(vehicle_dict)
@@ -282,14 +309,18 @@ def dict_text_draw_info(select_dict):
     return text, text_lenth
 
 # 返回图标路径，图标透明度，将图标宽度拉至100像素后对应的长度，图标名称
-def icon_info(mode, dict):
+def icon_info(bfversion, mode, dict):
+    if bfversion == "bf1":
+        img_path = bf1_imgpath
+    elif bfversion == "bfv":
+        img_path = bfv_imgpath
     icon_name = dict.get('名称')
     if mode == "class":
-        im = Image.open(os.path.join(filepath, 'class_img', icon_name + '.png', ))
+        im = Image.open(os.path.join(img_path, 'class_img', icon_name + '.png'))
     elif mode == "weapon":
-        im = Image.open(os.path.join(filepath, 'weapon_img', dict.get('类型'), icon_name + '.png', ))
+        im = Image.open(os.path.join(img_path, 'weapon_img', dict.get('类型'), icon_name + '.png'))
     elif mode == "vehicle":
-        im = Image.open(os.path.join(filepath, 'vehicle_img', dict.get('类型'), icon_name + '.png', ))
+        im = Image.open(os.path.join(img_path, 'vehicle_img', dict.get('类型'), icon_name + '.png'))
     
     size = im.size
     x, y = int(size[0]*(100/size[1])), 100
@@ -298,13 +329,13 @@ def icon_info(mode, dict):
     return icon_path, icon_path.split()[3], x, icon_name.replace('_', '/')
 
 # 将详细数据绘制到图片中
-def bestinfo_drawer(mode, image, dict, middle_x, y, blank):
+def bestinfo_drawer(bfversion, mode, image, dict, middle_x, y, blank):
     if mode == 'class':
-        icon1 = icon_info('class', dict)
+        icon1 = icon_info(bfversion, 'class', dict)
     if mode == 'weapon':
-        icon1 = icon_info('weapon', dict)
+        icon1 = icon_info(bfversion, 'weapon', dict)
     if mode == 'vehicle':
-        icon1 = icon_info('vehicle', dict)
+        icon1 = icon_info(bfversion, 'vehicle', dict)
 
     image.paste(icon1[0], (middle_x-icon1[2]-20, y), icon1[1])
     draw = ImageDraw.Draw(image, "RGB")
@@ -314,7 +345,7 @@ def bestinfo_drawer(mode, image, dict, middle_x, y, blank):
     draw.text((middle_x-draw1[1]/2, y+blank+100), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
 
 # 生成总体战绩图片的方法
-def general_img_creater(g_dict, c_list, w_list, v_list, g_list):
+def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
     im = Image.open(os.path.join(filepath, "general_bg.jpg"))
     a = get(g_dict.get('头像img')).content
     aimg_bytestream = io.BytesIO(a)
@@ -337,13 +368,16 @@ def general_img_creater(g_dict, c_list, w_list, v_list, g_list):
     best_vehicles_dict = v_list[0]
     best_gamemodes_dict = g_list[0]
 
-    bestinfo_drawer('class', im, best_class_dict, 1310, 115, 10)
-    bestinfo_drawer('weapon', im, best_weapon_dict, 1310, 115+230*1, 10)
-    bestinfo_drawer('vehicle', im, best_vehicles_dict, 1310, 115+230*2, 10)
-    draw1 = dict_text_draw_info(best_gamemodes_dict)
-    modename = f"最佳游戏模式:{bf1translate.get(best_gamemodes_dict.get('名称').upper())}"
-    draw.text((1310-largefont.getsize(modename)[0]/2, 110+230*3+25), modename, font =largefont, fill = (255, 255, 255))
-    draw.text((1310-draw1[1]/2, 110+230*3+115), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
+    bestinfo_drawer(bfversion, 'class', im, best_class_dict, 1310, 115, 10)
+    bestinfo_drawer(bfversion, 'weapon', im, best_weapon_dict, 1310, 115+230*1, 10)
+    bestinfo_drawer(bfversion, 'vehicle', im, best_vehicles_dict, 1310, 115+230*2, 10)
+    if bfversion == "bf1":
+        draw1 = dict_text_draw_info(best_gamemodes_dict)
+        modename = f"最佳游戏模式:{bf1translate.get(best_gamemodes_dict.get('名称').upper())}"
+        draw.text((1310-largefont.getsize(modename)[0]/2, 110+230*3+25), modename, font =largefont, fill = (255, 255, 255))
+        draw.text((1310-draw1[1]/2, 110+230*3+115), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
+    elif bfversion == "bfv":
+        bestinfo_drawer(bfversion, 'weapon', im, g_list[0], 1310, 115+230*3, 10)
 
     b_io = io.BytesIO()
     im.save(b_io, format = "JPEG")
@@ -352,7 +386,7 @@ def general_img_creater(g_dict, c_list, w_list, v_list, g_list):
     return base64_str
 
 # 生成详细数据图片的方法
-def other_img_creater(mode, best_list, playname):
+def other_img_creater(bfversion, mode, best_list, playname):
     im = Image.open(os.path.join(filepath, "other_bg.jpg"))
     draw = ImageDraw.Draw(im, "RGB")
     if mode == "gamemode":
@@ -362,9 +396,13 @@ def other_img_creater(mode, best_list, playname):
             draw.text((530-largefont.getsize(modename)[0]/2, 85+175*i+30*i), modename, font = largefont, fill = (255, 255, 255))
             draw.text((530-draw1[1]/2, 160+175*i+30*i), draw1[0], font = resize_font(38, draw1[0], 980), fill = (255, 255, 255))
     else:
-        for i in range(5):
+        if bfversion == "bfv" and mode == "class":
+            cycles = 4
+        else:
+            cycles = 5
+        for i in range(cycles):
             best_dict = best_list[i]
-            bestinfo_drawer(mode, im, best_dict, 530, 65+175*i+30*i, 10)
+            bestinfo_drawer(bfversion, mode, im, best_dict, 530, 65+175*i+30*i, 10)
     
     draw.text((530-largefont.getsize(playname)[0]/2, 0), playname, font = largefont, fill = (0, 0, 0))
 
@@ -376,6 +414,7 @@ def other_img_creater(mode, best_list, playname):
 
 # 绑定id
 def bindid_action(mode, userqqid, playername):
+    bindid_dict = {}
     if not os.path.exists(bf1_bind_path):
         with open(bf1_bind_path, "w", encoding = "utf-8") as f:
             f.write(json.dumps(bindid_dict))
@@ -392,61 +431,62 @@ def bindid_action(mode, userqqid, playername):
         f.write(json.dumps(id_dict))
     return oldid, newid
 
-# 首次加载时，生成两个背景，默认为模式1
-# 若需要更换自定义背景，请在图片重命名之后重启本插件
-# 在首次加载生成背景之后，最好将这部分代码注释掉，下次需要时再使用
-# general_BGimg_creater(1, get_img())
-# other_BGimg_creater(1, get_img())
-
-# 首次加载时如果没有3个图标文件夹，则自动下载
-# 如果需要下载图标文件，则在get_data("")内填入任意一个库存内有对应战地版本游戏的origin的id
-# 首次加载下载完图片后，最好将这部分代码注释掉，下次需要时再使用
-# get_data("")
-# if not os.path.exists(os.path.join(filepath, "class_img")):
-#     download_img("class")
-# if not os.path.exists(os.path.join(filepath, "weapon_img")):
-#     download_img("weapon")
-# if not os.path.exists(os.path.join(filepath, "vehicle_img")):
-#     download_img("vehicle")
-# 战地5id NoctivAgaTion
-
+def mode_dict_creater():
+    get_weapon = best_weapon()[0]
+    get_gadget = best_weapon()[1]
+    get_sidearm = best_weapon()[2]
+    get_field_kit = best_weapon()[3]
+    get_melee = best_weapon()[4]
+    get_vehicle = best_vehicles()
+    get_class = best_class()
+    try:
+        get_gamemode = best_gamemodes()
+    except:
+        get_gamemode = []
+    mode_dict = {"武器":("weapon", get_weapon), "配备":("weapon", get_gadget), "手枪":("weapon", get_sidearm), "特种":("weapon", get_field_kit),\
+         "近战":("weapon", get_melee), "载具":("vehicle", get_vehicle), "职业":("class", get_class), "模式":("gamemode", get_gamemode)}
+    return mode_dict
 
 sv = Service("zhandi_query")
 
 @sv.on_suffix('战绩')
 async def bf_general_query(bot, ev):
-    player = ev.message.extract_plain_text().strip()
-    resp = get_data(player)
-    if resp.get("detail", " ") == "playername not found":
-        await bot.send(ev, "查无此人")
+    mes_id = ev['message_id']
+    mes = ev.message.extract_plain_text().strip()
+    playername = mes[0:-3]
+    if "战地1" in mes:
+        bfversion = "bf1"
+    elif "战地5" in mes:
+        bfversion = "bfv"
+    resp = get_data(bfversion, playername)
+    if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
     else:
         dict = general()
-        img_mes = general_img_creater(dict, best_class(), best_weapon(), best_vehicles(), best_gamemodes())
-        await bot.send(ev, f"[CQ:image,file={img_mes}]")
+        if "战地1" in mes:
+            img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+        elif "战地5" in mes:
+            img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
 
 @sv.on_suffix('数据')
 async def bf_other_query(bot, ev):
-    evmes = ev.message.extract_plain_text().strip().split(" ")
-    playername = evmes[0]
-    mode =evmes[1]
-    resp = get_data(playername)
-    if resp.get("detail", " ") == "playername not found":
-        await bot.send(ev, "查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复", at_sender=True)
+    mes_id = ev['message_id']
+    mes = ev.message.extract_plain_text().strip().split()
+    playername = mes[0]
+    if "战地1" in mes[1]:
+        bfversion = "bf1"
+    elif "战地5" in mes[1]:
+        bfversion = "bfv"
+    mode = mes[1][3:]
+    resp = get_data(bfversion, playername)
+    if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
     else:
-        if mode == "武器":
-            query_mode = "weapon"
-            query_list = best_weapon()
-        elif mode == "载具":
-            query_mode = "vehicle"
-            query_list = best_vehicles()
-        elif mode == "职业":
-            query_mode = "class"
-            query_list = best_class()
-        elif mode == "模式":
-            query_mode = "gamemode"
-            query_list = best_gamemodes()
-        img_mes = other_img_creater(query_mode, query_list, playername)
-        await bot.send(ev, f"[CQ:image,file={img_mes}]")
+        query_mode = mode_dict_creater().get(mode)[0]
+        query_list = mode_dict_creater().get(mode)[1]
+        img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
+        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
 
 @sv.on_prefix('绑定')
 async def bf1_bind(bot, ev):
@@ -483,56 +523,35 @@ async def bind_search(bot, ev):
     with open(bf1_bind_path, "r", encoding = "utf-8") as f:
         id_dict = json.loads(f.read())
     if id_dict.get(str(ev['user_id']), '') == '':
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]您暂未绑定id，请发送绑定+id进行绑定!", at_sender=True)
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]您暂未绑定id，请发送绑定+id进行绑定!")
     else:
+        mes = ev.message.extract_plain_text().strip()
+        if "1" in mes:
+            bfversion = "bf1"
+        elif "5" in mes:
+            bfversion = "bfv"
         playername = id_dict.get(str(ev['user_id']), '')
-        resp = get_data(playername)
-        mode = ev.message.extract_plain_text().strip()
-        if resp.get("detail", " ") == "playername not found":
-            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复", at_sender=True)
+        resp = get_data(bfversion, playername)
+        mode = mes[1:]
+        if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
+            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
         else:
+            dict = general()
             if mode == "战绩":
-                dict = general()
-                img_mes = general_img_creater(dict, best_class(), best_weapon(), best_vehicles(), best_gamemodes())
+                if "1" in mes:
+                    img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                elif "5" in mes:
+                    img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
             else:
-                if mode == "武器":
-                    query_mode = "weapon"
-                    query_list = best_weapon()
-                elif mode == "载具":
-                    query_mode = "vehicle"
-                    query_list = best_vehicles()
-                elif mode == "职业":
-                    query_mode = "class"
-                    query_list = best_class()
-                elif mode == "模式":
-                    query_mode = "gamemode"
-                    query_list = best_gamemodes()
-                img_mes = other_img_creater(query_mode, query_list, playername)
+                query_mode = mode_dict_creater().get(mode)[0]
+                query_list = mode_dict_creater().get(mode)[1]
+                img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
             await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
-        
-@sv.on_prefix('更新图片资源')
-async def refresh_img(bot, ev):
-    if not priv.check_priv(ev, priv.ADMIN):
-        await bot.send(ev, "本功能只对群管理或bot管理员开放")
-        return
-    playname = ev.message.extract_plain_text().strip()
-    resp = get_data(playname)
-    if resp.get("detail", " ") == "playername not found":
-        await bot.send(ev, "此id无效，请输入其他有效id")
-    else:
-        await bot.send(ev, "正在更新图片资源，请等待更新完毕后再使用本插件")
-        if not os.path.exists(os.path.join(filepath, "class_img")):
-            download_img("class")
-        if not os.path.exists(os.path.join(filepath, "weapon_img")):
-            download_img("weapon")
-        if not os.path.exists(os.path.join(filepath, "vehicle_img")):
-            download_img("vehicle")
-        await bot.send(ev, "更新图片资源完毕")
 
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
-    if not priv.check_priv(ev, priv.ADMIN):
-        await bot.send(ev, "本功能只对群管理或bot管理员开放")
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.send(ev, "本功能只对bot管理员开放")
         return
     mode = ev.message.extract_plain_text().strip()
     general_BGimg_creater(int(mode), get_img())
