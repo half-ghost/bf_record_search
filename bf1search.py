@@ -37,6 +37,7 @@ largefont = ImageFont.truetype(font_path, 38)
 middlefont = ImageFont.truetype(font_path, 30)
 smallfont = ImageFont.truetype(font_path, 26)
 text_list = ['击杀', '助攻', 'KD', 'KPM', '步战KD', '步战KPM', '爆头击杀', '爆头率', '精准率', '胜场', '败场', '胜率', '游戏局数', 'SPM', '技巧值', '总治疗量']
+type_dict = {"weapon":"weapons", "vehicle":"vehicles", "class":"classes"}
 
 with open(transtxt_path, 'r', encoding = 'utf-8') as f:
     bf1translate = json.loads(f.read())
@@ -55,15 +56,12 @@ def get_img():
 # 缺失图片时使用本方法
 def download_img(bfversion, img_type):
     json_content = ""
-    if img_type == "weapon":
-        json_content = json_page['weapons']
-    elif img_type == "vehicle":
-        json_content = json_page['vehicles']
-    elif img_type == "class":
-        json_content = json_page['classes']
+    if type_dict.get(img_type, "") != "":
+        json_content = json_page[type_dict.get(img_type)]
     else:
         print("找不到数据")
         return
+
     if bfversion == "bf1":
         img_path = os.path.join(bf1_imgpath, f"{img_type}_img")
     elif bfversion == "bfv":
@@ -91,6 +89,7 @@ def download_img(bfversion, img_type):
             img_content = get(img).content
             img_bytestream = io.BytesIO(img_content)
             im = Image.open(img_bytestream)
+
             bbox = im.getbbox()
             middle_point = ((bbox[0] + bbox[2])/2, (bbox[1] + bbox[3])/2)
             if bbox[2] - bbox[0] <= 256 and bbox[3] - bbox[1] <= 64:
@@ -105,6 +104,50 @@ def download_img(bfversion, img_type):
             im2 = im.crop(crop_box)
             im2.save(f"{img_path}/{get_type}/{name}.png")
 
+# 自动补全因api给出的图片数据与本地图片数据不同时缺少的图片
+def img_completer(bfversion, img_type):
+    if bfversion == "bf1":
+        img_path = os.path.join(bf1_imgpath, f"{img_type}_img")
+    elif bfversion == "bfv":
+        img_path = os.path.join(bfv_imgpath, f"{img_type}_img")
+
+    local_img_list = []
+    api_img_list = []
+    for i in os.walk(os.path.join(bfv_imgpath, img_type + "_img")):
+        local_img_list += i[2]
+    for i in range(len(local_img_list)):
+        local_img_list[i] = local_img_list[i].replace(".png", "")
+    api_img = json_page[type_dict.get(img_type)]
+    for i in api_img:
+        name = i[f'{img_type}Name'].replace('/', '_')
+        api_img_list.append(name)
+    a = set(api_img_list)
+    b = set(local_img_list)
+    compare_list = list(b ^ a)
+    for i in api_img:
+        name = i[f'{img_type}Name'].replace('/', '_')
+        if name in compare_list:
+            img = i['image']
+            get_type = i['type'].replace('/', '_')
+            print(f"正在补全{img_type}第{compare_list.index(name)+1}个图标")
+            img_content = get(img).content
+            img_bytestream = io.BytesIO(img_content)
+            im = Image.open(img_bytestream)
+
+            bbox = im.getbbox()
+            middle_point = ((bbox[0] + bbox[2])/2, (bbox[1] + bbox[3])/2)
+            if bbox[2] - bbox[0] <= 256 and bbox[3] - bbox[1] <= 64:
+                crop_box = (middle_point[0] - 128, middle_point[1] - 32, middle_point[0] + 128, middle_point[1] + 32)
+            elif bbox[2] - bbox[0] > 256 and bbox[3] - bbox[1] > 64:
+                crop_box = (bbox[0] - 10, bbox[1] -10, bbox[2] + 10, bbox[3] + 10)
+            else:
+                if bbox[2] - bbox[0] > 256:
+                    crop_box = (bbox[0] - 10, middle_point[1] - 32, bbox[2] + 10, middle_point[1] + 32)
+                elif bbox[3] - bbox[1] > 64:
+                    crop_box = (middle_point[0] - 128, bbox[1] -10, middle_point[0] + 128, bbox[3] + 10)
+            im2 = im.crop(crop_box)
+            im2.save(f"{img_path}/{get_type}/{name}.png")
+    
 # 更换自定义背景图后使用本方法生成一个用于展示总体战绩的背景图
 def general_BGimg_creater(mode, im):
     '''
@@ -315,13 +358,15 @@ def icon_info(bfversion, mode, dict):
     elif bfversion == "bfv":
         img_path = bfv_imgpath
     icon_name = dict.get('名称')
-    if mode == "class":
-        im = Image.open(os.path.join(img_path, 'class_img', icon_name + '.png'))
-    elif mode == "weapon":
-        im = Image.open(os.path.join(img_path, 'weapon_img', dict.get('类型'), icon_name + '.png'))
-    elif mode == "vehicle":
-        im = Image.open(os.path.join(img_path, 'vehicle_img', dict.get('类型'), icon_name + '.png'))
-    
+    try:
+        if mode == "class":
+            im = Image.open(os.path.join(img_path, 'class_img', icon_name + '.png'))
+        elif mode == "weapon":
+            im = Image.open(os.path.join(img_path, 'weapon_img', dict.get('类型'), icon_name + '.png'))
+        elif mode == "vehicle":
+            im = Image.open(os.path.join(img_path, 'vehicle_img', dict.get('类型'), icon_name + '.png'))
+    except FileNotFoundError:
+        raise Exception(mode)
     size = im.size
     x, y = int(size[0]*(100/size[1])), 100
     icon_path = im.resize((x, y))
@@ -330,13 +375,7 @@ def icon_info(bfversion, mode, dict):
 
 # 将详细数据绘制到图片中
 def bestinfo_drawer(bfversion, mode, image, dict, middle_x, y, blank):
-    if mode == 'class':
-        icon1 = icon_info(bfversion, 'class', dict)
-    if mode == 'weapon':
-        icon1 = icon_info(bfversion, 'weapon', dict)
-    if mode == 'vehicle':
-        icon1 = icon_info(bfversion, 'vehicle', dict)
-
+    icon1 = icon_info(bfversion, mode, dict)
     image.paste(icon1[0], (middle_x-icon1[2]-20, y), icon1[1])
     draw = ImageDraw.Draw(image, "RGB")
     transtext = bf1translate.get(str(icon1[3]).upper(), icon1[3])
@@ -443,6 +482,7 @@ def mode_dict_creater():
         get_gamemode = best_gamemodes()
     except:
         get_gamemode = []
+
     mode_dict = {"武器":("weapon", get_weapon), "配备":("weapon", get_gadget), "手枪":("weapon", get_sidearm), "特种":("weapon", get_field_kit),\
          "近战":("weapon", get_melee), "载具":("vehicle", get_vehicle), "职业":("class", get_class), "模式":("gamemode", get_gamemode)}
     return mode_dict
@@ -464,10 +504,21 @@ async def bf_general_query(bot, ev):
     else:
         dict = general()
         if "战地1" in mes:
-            img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+            try:
+                img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+            except Exception as e:
+                await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                img_completer(bfversion, str(e))
+                await bot.send(ev, "补全完成,请重新发送指令！")
         elif "战地5" in mes:
-            img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
-        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+            try:
+                img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+                await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+            except Exception as e:
+                await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                img_completer(bfversion, str(e))
+                await bot.send(ev, "补全完成,请重新发送指令！")
 
 @sv.on_suffix('数据')
 async def bf_other_query(bot, ev):
@@ -485,8 +536,13 @@ async def bf_other_query(bot, ev):
     else:
         query_mode = mode_dict_creater().get(mode)[0]
         query_list = mode_dict_creater().get(mode)[1]
-        img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
-        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+        try:
+            img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
+            await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+        except Exception as e:
+            await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+            img_completer(bfversion, str(e))
+            await bot.send(ev, "补全完成,请重新发送指令！")
 
 @sv.on_prefix('绑定')
 async def bf1_bind(bot, ev):
@@ -539,14 +595,31 @@ async def bind_search(bot, ev):
             dict = general()
             if mode == "战绩":
                 if "1" in mes:
-                    img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                    try:
+                        img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+                    except Exception as e:
+                        await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                        img_completer(bfversion, str(e))
+                        await bot.send(ev, "补全完成,请重新发送指令！")
                 elif "5" in mes:
-                    img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+                    try:
+                        img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+                    except Exception as e:
+                        await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                        img_completer(bfversion, str(e))
+                        await bot.send(ev, "补全完成,请重新发送指令！")
             else:
                 query_mode = mode_dict_creater().get(mode)[0]
                 query_list = mode_dict_creater().get(mode)[1]
-                img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
-            await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+                try:
+                    img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
+                    await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
+                except Exception as e:
+                    await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                    img_completer(bfversion, str(e))
+                    await bot.send(ev, "补全完成,请重新发送指令！")
 
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
