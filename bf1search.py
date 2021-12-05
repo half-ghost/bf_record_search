@@ -412,7 +412,7 @@ def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
     bestinfo_drawer(bfversion, 'vehicle', im, best_vehicles_dict, 1310, 115+230*2, 10)
     if bfversion == "bf1":
         draw1 = dict_text_draw_info(best_gamemodes_dict)
-        modename = f"最佳游戏模式:{bf1translate.get(best_gamemodes_dict.get('名称').upper())}"
+        modename = f"最佳游戏模式:{bf1translate.get(best_gamemodes_dict.get('名称').upper(), best_gamemodes_dict.get('名称'))}"
         draw.text((1310-largefont.getsize(modename)[0]/2, 110+230*3+25), modename, font =largefont, fill = (255, 255, 255))
         draw.text((1310-draw1[1]/2, 110+230*3+115), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
     elif bfversion == "bfv":
@@ -431,7 +431,7 @@ def other_img_creater(bfversion, mode, best_list, playname):
     if mode == "gamemode":
         for i in range(5):
             draw1 = dict_text_draw_info(best_list[i])
-            modename = f"游戏模式:{best_list[i].get('名称')}"
+            modename = f"游戏模式:{bf1translate.get(best_list[i].get('名称').upper(), best_list[i].get('名称'))}"
             draw.text((530-largefont.getsize(modename)[0]/2, 85+175*i+30*i), modename, font = largefont, fill = (255, 255, 255))
             draw.text((530-draw1[1]/2, 160+175*i+30*i), draw1[0], font = resize_font(38, draw1[0], 980), fill = (255, 255, 255))
     else:
@@ -501,6 +501,8 @@ async def bf_general_query(bot, ev):
     resp = get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
         await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+    elif "Internal Server Error" in str(resp.values()):
+        await bot.send(ev, "api服务器炸了")
     else:
         dict = general()
         if "战地1" in mes:
@@ -533,6 +535,8 @@ async def bf_other_query(bot, ev):
     resp = get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
         await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+    elif "Internal Server Error" in str(resp.values()):
+        await bot.send(ev, "api服务器炸了")
     else:
         query_mode = mode_dict_creater().get(mode)[0]
         query_list = mode_dict_creater().get(mode)[1]
@@ -591,6 +595,8 @@ async def bind_search(bot, ev):
         mode = mes[1:]
         if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
             await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+        elif "Internal Server Error" in str(resp.values()):
+            await bot.send(ev, "api服务器炸了")
         else:
             dict = general()
             if mode == "战绩":
