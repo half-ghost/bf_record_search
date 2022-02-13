@@ -32,12 +32,13 @@
 感谢[@冷雷佬](https://github.com/ColdThunder11)提供的中文译本
 
 # 在部署前需要注意
-- 在使用前请将两个压缩包解压后放在同目录内
+- 在使用前请将"bf1.rar"和"bfv.rar"两个压缩包解压后放在同目录内
 - 本项目需要用到的字体文件，不会在项目文件中提供，需自行提供。本项目默认使用的是微软雅黑细体，可在原生windows的C:\Windows\Fonts目录下找到，并将对应文件复制到和本项目文件同目录下。
 - 如果你不喜欢本项目自带的背景图，也可以自定义背景，自定义背景需要`1920*1080`分辨率或者等于此比例的图片。自定义的背景在更换完后可重启bot重新生成也可通过命令生成。（考虑到大多数bot是部署在云服，我将插件所需的两个背景设置成事先生成好，这样可以节省对服务器内存的占用，提高bot的响应速度）
 - 插件的注释中写了更多详细内容以及使用方法，可自行阅读
 
 # 部署
-下载本项目，并在HoshinoBot\hoshino\modules目录下新建一个bf_record_search文件夹，将项目文件扔进去，然后在HoshinoBot/hoshino/config/\_\_bot\_\_ .py中的MODULES_ON中添加'bf_record_search'
-
+- 下载本项目，并在HoshinoBot\hoshino\modules目录下新建一个bf_record_search文件夹，将项目文件扔进去，然后在HoshinoBot/hoshino/config/\_\_bot\_\_ .py中的MODULES_ON中添加'bf_record_search'
+- 在使用前请将"bf1.rar"和"bfv.rar"两个压缩包解压后放在同目录内
+- 第一次使用请对机器人使用刷新背景图的命令，具体命令请参考源码
 HoshinoBot的部署方法详见[HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)
