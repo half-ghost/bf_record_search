@@ -43,8 +43,11 @@ with open(transtxt_path, 'r', encoding = 'utf-8') as f:
 
 # 如需更换自定义背景，请将背景重命名为background.jpg，并参照下面的说明来生成两个背景
 # 自定义背景图分辨率需为1920*1080，或者与其比例一致，否则会被拉伸至该比例
-def get_img():
-    BGimg = Image.open(os.path.join(filepath, "background.jpg"))
+def get_img(bfver):
+    if bfver == 1:
+        BGimg = Image.open(os.path.join(filepath, "background1.jpg"))
+    else:
+        BGimg = Image.open(os.path.join(filepath, "background5.jpg"))
     if BGimg.size != (1920, 1080):
         BGimg = BGimg.resize((1920, 1080))
 
@@ -148,7 +151,7 @@ def img_completer(bfversion, img_type):
             im2.save(f"{img_path}/{get_type}/{name}.png")
     
 # 更换自定义背景图后使用本方法生成一个用于展示总体战绩的背景图
-def general_BGimg_creater(mode, im):
+def general_BGimg_creater(mode, im, bfver):
     '''
     mode为1时，新建一个背景高斯模糊，黑框半透明的图
     mode为2时，新建一个背景不模糊，黑框部分高斯模糊的图
@@ -188,11 +191,13 @@ def general_BGimg_creater(mode, im):
         draw.text((141+146*1, 415+140*(i/4)), text_list[i+1], font = smallfont, fill = (255, 255, 255))
         draw.text((141+146*2, 415+140*(i/4)), text_list[i+2], font = smallfont, fill = (255, 255, 255))
         draw.text((141+146*3, 415+140*(i/4)), text_list[i+3], font = smallfont, fill = (255, 255, 255))
-
-    im1.save(os.path.join(filepath, "general_bg.jpg"), quality=95)
+    if bfver == 1:
+        im1.save(os.path.join(filepath, "general_bg1.jpg"), quality=95)
+    else:
+        im1.save(os.path.join(filepath, "general_bg5.jpg"), quality=95)
 
 # 以及一个用于展示详细数据的背景图
-def other_BGimg_creater(mode, im):
+def other_BGimg_creater(mode, im, bfver):
     if mode == 1:
         im1 = im.crop((430, 0, 1490, 1080)).filter(ImageFilter.GaussianBlur(radius = 3))
     elif mode == 2:
@@ -205,8 +210,10 @@ def other_BGimg_creater(mode, im):
             box = im1.crop((30, 25+30*(i+1)+175*i, 1030, 200+30*(i+1)+175*i)).filter(ImageFilter.GaussianBlur(radius = 8))
             im1.paste(box, (30, 25+30*(i+1)+175*i, 1030, 200+30*(i+1)+175*i))
         im1.paste(back, (30, 25+30*(i+1)+175*i), a)
-    
-    im1.save(os.path.join(filepath, "other_bg.jpg"), quality=95)
+    if bfver == 1:
+        im1.save(os.path.join(filepath, "other_bg1.jpg"), quality=95)
+    else:
+        im1.save(os.path.join(filepath, "other_bg5.jpg"), quality=95)
 
 # 转换秒数为时分秒的形式
 def seconds_trans(seconds):
@@ -384,7 +391,10 @@ def bestinfo_drawer(bfversion, mode, image, dict, middle_x, y, blank):
 
 # 生成总体战绩图片的方法
 def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
-    im = Image.open(os.path.join(filepath, "general_bg.jpg"))
+    if bfversion == "bf1":
+        im = Image.open(os.path.join(filepath, "general_bg1.jpg"))
+    else:
+        im = Image.open(os.path.join(filepath, "general_bg5.jpg"))
     a = get(g_dict.get('头像img')).content
     aimg_bytestream = io.BytesIO(a)
     a_imgb = Image.open(aimg_bytestream).resize((230, 230))
@@ -626,14 +636,24 @@ async def bind_search(bot, ev):
                     img_completer(bfversion, str(e))
                     await bot.send(ev, "补全完成,请重新发送指令！")
 
-@sv.on_prefix('刷新背景图')
+@sv.on_prefix('刷新1背景图')
 async def refresh_BGimg(bot, ev):
     if not priv.check_priv(ev, priv.SUPERUSER):
         await bot.send(ev, "本功能只对bot管理员开放")
         return
     mode = ev.message.extract_plain_text().strip()
-    general_BGimg_creater(int(mode), get_img())
-    other_BGimg_creater(int(mode), get_img())
+    general_BGimg_creater(int(mode), get_img(1), 1)
+    other_BGimg_creater(int(mode), get_img(1), 1)
+    await bot.send(ev, "刷新完毕")
+    
+@sv.on_prefix('刷新5背景图')
+async def refresh_BGimg(bot, ev):
+    if not priv.check_priv(ev, priv.SUPERUSER):
+        await bot.send(ev, "本功能只对bot管理员开放")
+        return
+    mode = ev.message.extract_plain_text().strip()
+    general_BGimg_creater(int(mode), get_img(5), 5)
+    other_BGimg_creater(int(mode), get_img(5), 5)
     await bot.send(ev, "刷新完毕")
 
 @sv.on_fullmatch('战地战绩插件帮助')
