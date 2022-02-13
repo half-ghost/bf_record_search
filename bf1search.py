@@ -435,7 +435,10 @@ def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
 
 # 生成详细数据图片的方法
 def other_img_creater(bfversion, mode, best_list, playname):
-    im = Image.open(os.path.join(filepath, "other_bg.jpg"))
+    if bfversion == "bf1":
+        im = Image.open(os.path.join(filepath, "other_bg1.jpg"))
+    else:
+        im = Image.open(os.path.join(filepath, "other_bg5.jpg"))
     draw = ImageDraw.Draw(im, "RGB")
     if mode == "gamemode":
         for i in range(5):
