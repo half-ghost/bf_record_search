@@ -530,6 +530,9 @@ async def bf_other_query(bot, ev):
         bfversion = "bf1"
     elif "战地5" in mes[1]:
         bfversion = "bfv"
+    else:
+        await bot.send("请指定战地版本")
+        return
     mode = mes[1][3:]
     resp = get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
@@ -548,7 +551,7 @@ async def bf_other_query(bot, ev):
             await bot.send(ev, "补全完成,请重新发送指令！")
 
 @sv.on_prefix('绑定')
-async def bf1_bind(bot, ev):
+async def bf_bind(bot, ev):
     userqqid = ev['user_id']
     playername = ev['message'][0]['data']['text']
     bind_stat = bindid_action("add", userqqid, playername)
@@ -568,7 +571,7 @@ async def bindid_query(bot, ev):
         await bot.send(ev, f"您目前绑定的id:{bind_stat}", at_sender=True)
 
 @sv.on_fullmatch('解除战地绑定')
-async def bf1_unbind(bot, ev):
+async def bf_unbind(bot, ev):
     userqqid = ev['user_id']
     bind_stat = bindid_action("delete", userqqid, None)
     if bind_stat[0] == '':
@@ -589,6 +592,9 @@ async def bind_search(bot, ev):
             bfversion = "bf1"
         elif "5" in mes:
             bfversion = "bfv"
+        else:
+            await bot.send("请指定战地版本")
+            return
         playername = id_dict.get(str(ev['user_id']), '')
         resp = get_data(bfversion, playername)
         mode = mes[1:]
