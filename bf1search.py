@@ -2,7 +2,7 @@ help_text = f'''
 本插件为战地的战绩查询插件，拥有如下指令：
 --------------------
 查询相关
-[xxx战地1战绩or战地5战绩数据] :xxx为有效的玩家origin id
+[xxx战地1战绩or战地5战绩] :xxx为有效的玩家origin id
 [xxx 战地1yy数据or战地5yy数据] :xxx为origin id，yy为下述详细数据，注意xxx后的空格
 [/1战绩or/5战绩]or[/1yyor/5yy] :此为绑定id之后的查询指令
 (战地1可查看的详细数据:战绩,武器,手枪,近战,配备(迫击炮,炸药等),特种(哨兵,喷火兵等),载具,职业,模式)
@@ -488,7 +488,7 @@ def mode_dict_creater():
 
 sv = Service("zhandi_query")
 
-@sv.on_suffix('战绩数据')
+@sv.on_suffix('战绩')
 async def bf_general_query(bot, ev):
     mes_id = ev['message_id']
     mes = ev.message.extract_plain_text().strip()
