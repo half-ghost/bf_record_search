@@ -385,9 +385,14 @@ def bestinfo_drawer(bfversion, mode, image, dict, middle_x, y, blank):
 # 生成总体战绩图片的方法
 def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
     im = Image.open(os.path.join(filepath, "general_bg.jpg"))
-    a = get(g_dict.get('头像img')).content
-    aimg_bytestream = io.BytesIO(a)
-    a_imgb = Image.open(aimg_bytestream).resize((230, 230))
+    try:
+        a = get(g_dict.get('头像img')).content
+        aimg_bytestream = io.BytesIO(a)
+        a_imgb = Image.open(aimg_bytestream).resize((230, 230))
+    except:
+        a_imgb = Image.new("RGB", (230,230), (255,255,255))
+        a_draw = ImageDraw.Draw(a_imgb, "RGB")
+        a_draw.text((38, 94), "头像获取出错", font=smallfont, fill=(0, 0, 0))
     im.paste(a_imgb, (130, 130))
     draw = ImageDraw.Draw(im, "RGB")
 
