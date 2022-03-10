@@ -17,13 +17,12 @@ help_text = f'''
 [刷新背景图1or2] :更换完自定义背景后，在不想重启bot的情况下使用。1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
 '''.strip()
 
-from requests import get
 import json
 import os
 from PIL import Image,ImageDraw,ImageFont,ImageFilter
 import io
 import base64
-from hoshino import Service,priv
+from hoshino import Service,priv,aiorequests
 
 filepath = os.path.dirname(__file__)
 json_page = ""
@@ -53,7 +52,7 @@ def get_img():
 # 各种工具
 
 # 缺失图片时使用本方法
-def download_img(bfversion, img_type):
+async def download_img(bfversion, img_type):
     json_content = ""
     if type_dict.get(img_type, "") != "":
         json_content = json_page[type_dict.get(img_type)]
@@ -72,7 +71,7 @@ def download_img(bfversion, img_type):
             if not os.path.exists(img_path):
                 os.mkdir(img_path)
             print(f"{bfversion} 正在下载{img_type}第{json_content.index(i)+1}个图标")
-            img_content = get(img).content
+            img_content = await aiorequests.get(img).content
             with open(f"{img_path}/{name}.png", "wb")as f:
                 f.write(img_content)
     else:        
@@ -85,7 +84,7 @@ def download_img(bfversion, img_type):
             if not os.path.exists(f"{img_path}/{get_type}"):
                 os.mkdir(f"{img_path}/{get_type}")
             print(f"{bfversion} 正在下载{img_type}第{json_content.index(i)+1}个图标")
-            img_content = get(img).content
+            img_content = await aiorequests.get(img).content
             img_bytestream = io.BytesIO(img_content)
             im = Image.open(img_bytestream)
 
@@ -104,7 +103,7 @@ def download_img(bfversion, img_type):
             im2.save(f"{img_path}/{get_type}/{name}.png")
 
 # 自动补全因api给出的图片数据与本地图片数据不同时缺少的图片
-def img_completer(bfversion, img_type):
+async def img_completer(bfversion, img_type):
     if bfversion == "bf1":
         img_path = os.path.join(bf1_imgpath, f"{img_type}_img")
     elif bfversion == "bfv":
@@ -129,7 +128,8 @@ def img_completer(bfversion, img_type):
             img = i['image']
             get_type = i['type'].replace('/', '_')
             print(f"正在补全{img_type}第{compare_list.index(name)+1}个图标")
-            img_content = get(img).content
+            geturl = await aiorequests.get(img)
+            img_content = await geturl.content
             img_bytestream = io.BytesIO(img_content)
             im = Image.open(img_bytestream)
 
@@ -234,13 +234,14 @@ def resize_font(font_size, text_str, limit_width):
 
     return font
 
-def get_data(bfversion, player_name):
+async def get_data(bfversion, player_name):
     global json_page
     if bfversion == "bf1":
         surl = f"https://api.gametools.network/bf1/all/?name={player_name}&lang=en-us"
     elif bfversion == "bfv":
         surl = f"https://api.gametools.network/bfv/all/?name={player_name}&lang=en-us"
-    reqs = get(surl).text
+    geturl = await aiorequests.get(surl)
+    reqs = await geturl.text
     json_page = json.loads(reqs)
     
     return json_page
@@ -383,10 +384,11 @@ def bestinfo_drawer(bfversion, mode, image, dict, middle_x, y, blank):
     draw.text((middle_x-draw1[1]/2, y+blank+100), draw1[0], font = resize_font(38, draw1[0], 1000), fill = (255, 255, 255))
 
 # 生成总体战绩图片的方法
-def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
+async def general_img_creater(bfversion, g_dict, c_list, w_list, v_list, g_list):
     im = Image.open(os.path.join(filepath, "general_bg.jpg"))
     try:
-        a = get(g_dict.get('头像img')).content
+        geturl = await aiorequests.get(g_dict.get('头像img'), timeout = 4)
+        a = await geturl.content
         aimg_bytestream = io.BytesIO(a)
         a_imgb = Image.open(aimg_bytestream).resize((230, 230))
     except:
@@ -503,9 +505,8 @@ async def bf_general_query(bot, ev):
     elif "战地5" in mes:
         bfversion = "bfv"
     else:
-        # await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(战地1或战地5)")
         return
-    resp = get_data(bfversion, playername)
+    resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
         await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
@@ -514,18 +515,18 @@ async def bf_general_query(bot, ev):
         dict = general()
         try:
             if "战地1" in mes:
-                img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                img_mes = await general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
                 await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
             elif "战地5" in mes:
-                img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+                img_mes = await general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
                 await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
         except Exception as e:
             if str(e) == "weapon" or str(e) == "vehicle" or str(e) == "class":
-                await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
-                img_completer(bfversion, str(e))
-                await bot.send(ev, "补全完成,请重新发送指令！")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                await img_completer(bfversion, str(e))
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
             else:
-                await bot.send(ev, f"发生了其他错误，报错内容为:{e}")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
 
 @sv.on_suffix('数据')
 async def bf_other_query(bot, ev):
@@ -537,10 +538,9 @@ async def bf_other_query(bot, ev):
     elif "战地5" in mes[1]:
         bfversion = "bfv"
     else:
-        # await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(战地1或战地5)")
         return
     mode = mes[1][3:]
-    resp = get_data(bfversion, playername)
+    resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
         await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
@@ -553,11 +553,11 @@ async def bf_other_query(bot, ev):
             await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
         except Exception as e:
             if str(e) == "weapon" or str(e) == "vehicle" or str(e) == "class":
-                await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
-                img_completer(bfversion, str(e))
-                await bot.send(ev, "补全完成,请重新发送指令！")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                await img_completer(bfversion, str(e))
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
             else:
-                await bot.send(ev, f"发生了其他错误，报错内容为:{e}")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
 
 @sv.on_prefix('绑定')
 async def bf_bind(bot, ev):
@@ -605,7 +605,7 @@ async def bind_search(bot, ev):
             # await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(/1或/5)")
             return
         playername = id_dict.get(str(ev['user_id']), '')
-        resp = get_data(bfversion, playername)
+        resp = await get_data(bfversion, playername)
         mode = mes[1:]
         if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
             await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
@@ -616,18 +616,18 @@ async def bind_search(bot, ev):
             if mode == "战绩":
                 try:
                     if "1" in mes:
-                        img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
+                        img_mes = await general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_gamemodes())
                         await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
                     elif "5" in mes:
-                        img_mes = general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
+                        img_mes = await general_img_creater(bfversion, dict, best_class(), best_weapon()[0], best_vehicles(), best_weapon()[4])
                         await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
                 except Exception as e:
                     if str(e) == "weapon" or str(e) == "vehicle" or str(e) == "class":
-                        await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
-                        img_completer(bfversion, str(e))
-                        await bot.send(ev, "补全完成,请重新发送指令！")
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                        await img_completer(bfversion, str(e))
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
                     else:
-                        await bot.send(ev, f"发生了其他错误，报错内容为:{e}")
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
             else:
                 query_mode = mode_dict_creater().get(mode)[0]
                 query_list = mode_dict_creater().get(mode)[1]
@@ -635,9 +635,12 @@ async def bind_search(bot, ev):
                     img_mes = other_img_creater(bfversion, query_mode, query_list, playername)
                     await bot.send(ev, f"[CQ:reply,id={mes_id}][CQ:image,file={img_mes}]")
                 except Exception as e:
-                    await bot.send(ev, "检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
-                    img_completer(bfversion, str(e))
-                    await bot.send(ev, "补全完成,请重新发送指令！")
+                    if str(e) == "weapon" or str(e) == "vehicle" or str(e) == "class":
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]检测到图片缺失,将启动自动补全,请在完成后再次发送指令")
+                        await img_completer(bfversion, str(e))
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
+                    else:
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
 
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
