@@ -1,20 +1,20 @@
 help_text = f'''
-本插件为战地的战绩查询插件，拥有如下指令：
+本插件为战地的战绩查询插件,拥有如下指令：
 --------------------
 查询相关
 [xxx战地1战绩or战地5战绩] :xxx为有效的玩家origin id
-[xxx 战地1yy数据or战地5yy数据] :xxx为origin id，yy为下述详细数据，注意xxx后的空格
+[xxx 战地1yy数据or战地5yy数据] :xxx为origin id,yy为下述详细数据,注意xxx后的空格
 [/1战绩or/5战绩]or[/1yyor/5yy] :此为绑定id之后的查询指令
 (战地1可查看的详细数据:战绩,武器,手枪,近战,配备(迫击炮,炸药等),特种(哨兵,喷火兵等),载具,职业,模式)
 (战地5可查看的详细数据:战绩,武器,手枪,近战,配备,载具,职业)
 --------------------
 绑定相关
-[绑定xxx] :绑定玩家origin id，更换绑定的id也同样使用本指令
+[绑定xxx] :绑定玩家origin id,更换绑定的id也同样使用本指令
 [查询战地绑定] :查询自己当前绑定了哪个id
 [解除战地绑定] :解除自己绑定的id
 --------------------
 其他相关(仅bot管理员可用)
-[刷新背景图1or2] :更换完自定义背景后，在不想重启bot的情况下使用。1、2为两套图片的样式，1为背景模糊黑框不模糊，2为背景不模糊黑款模糊
+[刷新背景图1or2] :更换完自定义背景后,在不想重启bot的情况下使用。1、2为两套图片的样式,1为背景模糊黑框不模糊,2为背景不模糊黑款模糊
 '''.strip()
 
 import json
@@ -30,7 +30,7 @@ bf1_imgpath = os.path.join(filepath, "bf1")
 bfv_imgpath = os.path.join(filepath, "bfv")
 bf1_bind_path = os.path.join(filepath, "bf1_bindid.json")
 transtxt_path = os.path.join(filepath, "bf_translate.json")
-font_path = os.path.join(filepath, "msyhl.ttc") # ""内可以换成你喜欢的字体，请在更换字体后填入字体文件名
+font_path = os.path.join(filepath, "msyhl.ttc") # ""内可以换成你喜欢的字体,请在更换字体后填入字体文件名
 largefont = ImageFont.truetype(font_path, 38)
 middlefont = ImageFont.truetype(font_path, 30)
 smallfont = ImageFont.truetype(font_path, 26)
@@ -40,8 +40,8 @@ type_dict = {"weapon":"weapons", "vehicle":"vehicles", "class":"classes"}
 with open(transtxt_path, 'r', encoding = 'utf-8') as f:
     bf1translate = json.loads(f.read())
 
-# 如需更换自定义背景，请将背景重命名为background.jpg，并参照下面的说明来生成两个背景
-# 自定义背景图分辨率需为1920*1080，或者与其比例一致，否则会被拉伸至该比例
+# 如需更换自定义背景,请将背景重命名为background.jpg,并参照下面的说明来生成两个背景
+# 自定义背景图分辨率需为1920*1080,或者与其比例一致,否则会被拉伸至该比例
 def get_img():
     BGimg = Image.open(os.path.join(filepath, "background.jpg"))
     if BGimg.size != (1920, 1080):
@@ -150,9 +150,9 @@ async def img_completer(bfversion, img_type):
 # 更换自定义背景图后使用本方法生成一个用于展示总体战绩的背景图
 def general_BGimg_creater(mode, im):
     '''
-    mode为1时，新建一个背景高斯模糊，黑框半透明的图
-    mode为2时，新建一个背景不模糊，黑框部分高斯模糊的图
-    radius为高斯模糊的半径，可自行调整
+    mode为1时,新建一个背景高斯模糊,黑框半透明的图
+    mode为2时,新建一个背景不模糊,黑框部分高斯模糊的图
+    radius为高斯模糊的半径,可自行调整
     '''
 
     if mode == 1:
@@ -218,8 +218,8 @@ def seconds_trans(seconds):
 def resize_font(font_size, text_str, limit_width):
     '''
     在给定的长度内根据文字内容来改变文字的字体大小
-    font_size为默认大小，即如果函数判断以此字体大小所绘制出来的文字内容不会超过给定的长度时，则保持这个大小
-    若绘制出来的文字内容长度大于给定长度，则会不断对减小字体大小直至刚好小于给定长度
+    font_size为默认大小,即如果函数判断以此字体大小所绘制出来的文字内容不会超过给定的长度时,则保持这个大小
+    若绘制出来的文字内容长度大于给定长度,则会不断对减小字体大小直至刚好小于给定长度
     text_str为文字内容
     limit_width为给定的长度
     返回内容为PIL.ImageFont.FreeTypeFont对象
@@ -351,7 +351,7 @@ def dict_text_draw_info(select_dict):
 
     return text, text_lenth
 
-# 返回图标路径，图标透明度，将图标宽度拉至100像素后对应的长度，图标名称
+# 返回图标路径,图标透明度,将图标宽度拉至100像素后对应的长度,图标名称
 def icon_info(bfversion, mode, dict):
     if bfversion == "bf1":
         img_path = bf1_imgpath
@@ -505,10 +505,11 @@ async def bf_general_query(bot, ev):
     elif "战地5" in mes:
         bfversion = "bfv"
     else:
+        # await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(战地1或战地5)")
         return
     resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
         await bot.send(ev, "api服务器炸了")
     else:
@@ -526,7 +527,7 @@ async def bf_general_query(bot, ev):
                 await img_completer(bfversion, str(e))
                 await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
             else:
-                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误,报错内容为:{e}")
 
 @sv.on_suffix('数据')
 async def bf_other_query(bot, ev):
@@ -538,11 +539,12 @@ async def bf_other_query(bot, ev):
     elif "战地5" in mes[1]:
         bfversion = "bfv"
     else:
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(战地1或战地5)")
         return
     mode = mes[1][3:]
     resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
         await bot.send(ev, "api服务器炸了")
     else:
@@ -557,7 +559,7 @@ async def bf_other_query(bot, ev):
                 await img_completer(bfversion, str(e))
                 await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
             else:
-                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
+                await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误,报错内容为:{e}")
 
 @sv.on_prefix('绑定')
 async def bf_bind(bot, ev):
@@ -595,20 +597,20 @@ async def bind_search(bot, ev):
     with open(bf1_bind_path, "r", encoding = "utf-8") as f:
         id_dict = json.loads(f.read())
     if id_dict.get(str(ev['user_id']), '') == '' and ("1" in mes[0] or "5" in mes[0]):
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]您暂未绑定id，请发送绑定+id进行绑定!")
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]您暂未绑定id,请发送'绑定+id'进行绑定!")
     else:
         if "1" in mes[0]:
             bfversion = "bf1"
         elif "5" in mes[0]:
             bfversion = "bfv"
         else:
-            # await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(/1或/5)")
+            await bot.send(ev, f"[CQ:reply,id={mes_id}]请指定战地版本(/1或/5)")
             return
         playername = id_dict.get(str(ev['user_id']), '')
         resp = await get_data(bfversion, playername)
         mode = mes[1:]
         if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人，可能原因为:此id无效，或游戏库中没有对应版本战地游戏，或者查询的api抽风，这个情况可能需要过几天才会恢复")
+            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效,您当前绑定的id为:{id_dict.get(str(ev['user_id']))},请仔细检查 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
         elif "Internal Server Error" in str(resp.values()):
             await bot.send(ev, "api服务器炸了")
         else:
@@ -627,7 +629,7 @@ async def bind_search(bot, ev):
                         await img_completer(bfversion, str(e))
                         await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
                     else:
-                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误,报错内容为:{e}")
             else:
                 query_mode = mode_dict_creater().get(mode)[0]
                 query_list = mode_dict_creater().get(mode)[1]
@@ -640,7 +642,7 @@ async def bind_search(bot, ev):
                         await img_completer(bfversion, str(e))
                         await bot.send(ev, f"[CQ:reply,id={mes_id}]补全完成,请重新发送指令！")
                     else:
-                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误，报错内容为:{e}")
+                        await bot.send(ev, f"[CQ:reply,id={mes_id}]发生了其他错误,报错内容为:{e}")
 
 @sv.on_prefix('刷新背景图')
 async def refresh_BGimg(bot, ev):
