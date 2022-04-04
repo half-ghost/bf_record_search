@@ -509,7 +509,7 @@ async def bf_general_query(bot, ev):
         return
     resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.查询的api抽风,这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
         await bot.send(ev, "api服务器炸了")
     else:
@@ -544,7 +544,7 @@ async def bf_other_query(bot, ev):
     mode = mes[1][3:]
     resp = await get_data(bfversion, playername)
     if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
+        await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效 2.游戏库中没有对应版本战地游戏 3.查询的api抽风,这个情况可能需要过几天才会恢复")
     elif "Internal Server Error" in str(resp.values()):
         await bot.send(ev, "api服务器炸了")
     else:
@@ -610,7 +610,7 @@ async def bind_search(bot, ev):
         resp = await get_data(bfversion, playername)
         mode = mes[1:]
         if "Player not found" in str(resp.values()) or "playername not found" in str(resp.values()):
-            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效,您当前绑定的id为:{id_dict.get(str(ev['user_id']))},请仔细检查 2.游戏库中没有对应版本战地游戏 3.者查询的api抽风,这个情况可能需要过几天才会恢复")
+            await bot.send(ev, f"[CQ:reply,id={mes_id}]查无此人,可能:1.此id无效,您当前绑定的id为:{id_dict.get(str(ev['user_id']))},请仔细检查 2.游戏库中没有对应版本战地游戏 3.查询的api抽风,这个情况可能需要过几天才会恢复")
         elif "Internal Server Error" in str(resp.values()):
             await bot.send(ev, "api服务器炸了")
         else:
