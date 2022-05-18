@@ -592,7 +592,7 @@ async def bf_unbind(bot, ev):
 
 @sv.on_prefix('/')
 async def bind_search(bot, ev):
-    mes = ev.message.extract_plain_text().strip()
+    mes = ev.raw_message[1:]
     mes_id = ev['message_id']
     with open(bf1_bind_path, "r", encoding = "utf-8") as f:
         id_dict = json.loads(f.read())
